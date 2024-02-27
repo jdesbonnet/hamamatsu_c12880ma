@@ -5,7 +5,7 @@
 // Allows for attachments to spectrometer via 4 screwholes next to 
 // spectrometer can. 
 // 
-// Holes are designed to allow M2 screw threded inserts (recommended), or adjust
+// Holes are designed to allow M2 screw threaded inserts (recommended), or adjust
 // variable 'SD' for direct use of machine screws.
 //
 // Joe Desbonnet 2024-02-25.
@@ -14,20 +14,22 @@
 // For printing, enable one at time. Vertical components may need to
 // rotated in the slicer for reliable printing.
 showMainBox = true;
-showLid = true;
-showUsbWall = true;
+//showLid = true;
+//showUsbWall = true;
 
 
 
 $fn = 60;
 
-// Dimensions of main enclosure box (mm)
+// Dimensions of main enclosure box (mm). This is determined by the foot print of
+// the Arduino board and the height of the spectrometer breakout board which is
+// inserted into the Arduino pin header socket.
 X=70;
 Y=54;
 Z=38+8;
 
-// Thickness of wall
-T=5;
+// Thickness of wall - set to length of threaded insert
+T=3.5;
 
 // Extra bit because spectrometer protrudes out from side
 S = 4;
@@ -35,11 +37,15 @@ S = 4;
 
 // Screw diameter (SD) and length (SL)
 SD = 3;
-SL = 16-T;
+SL = 12-T;
+
+// Threaded M2 inserts: diameter 3.5mm
+SD = 3.5;
+SL = 3.5;
 
 // Offset of screw center from corners
-R = 3;
-
+R = 3.5;
+//R = 5;
 
 
 if (showMainBox) {
@@ -110,25 +116,25 @@ module main_enclosure_box() {
             // Use sphere to round the start of the post so that there
             // is no sudden overhang
             
-            translate([SD, -S+SD,Z-SL-R]) sphere(d=SD*2);
-            translate([SD, -S+SD,Z-SL-R]) cylinder(h=SL+R, d=SD*2);
+            translate([R, -S+R,Z-SL-R]) sphere(d=SD*2);
+            translate([R, -S+R,Z-SL-R]) cylinder(h=SL+R, d=SD*2);
         
-            translate([SD, T+Y+T-SD,Z-SL-R]) sphere(d=SD*2);
-            translate([SD, T+Y+T-SD,Z-SL-R]) cylinder(h=SL+R, d=SD*2);
+            translate([R, T+Y+T-R,Z-SL-R]) sphere(d=SD*2);
+            translate([R, T+Y+T-R,Z-SL-R]) cylinder(h=SL+R, d=SD*2);
         
                 
-            translate([T+X+T-SD, -S+SD,Z-SL-R]) sphere(d=SD*2);
-            translate([T+X+T-SD, -S+SD,Z-SL-R]) cylinder(h=SL+R, d=SD*2);
+            translate([T+X+T-R, -S+R,Z-SL-R]) sphere(d=SD*2);
+            translate([T+X+T-R, -S+R,Z-SL-R]) cylinder(h=SL+R, d=SD*2);
         
-            translate([T+X+T-SD, T+Y+T-SD, Z-SL-R]) sphere(d=SD*2);
-            translate([T+X+T-SD, T+Y+T-SD, Z-SL-R]) cylinder(h=SL+R, d=SD*2);
+            translate([T+X+T-R, T+Y+T-R, Z-SL-R]) sphere(d=SD*2);
+            translate([T+X+T-R, T+Y+T-R, Z-SL-R]) cylinder(h=SL+R, d=SD*2);
        
         }
  
         // Holes for lid screws
         lid_screw_holes();
-           spectrometer_screw_holes();
- usb_wall_screw_holes();
+        spectrometer_screw_holes();
+        usb_wall_screw_holes();
     }
     
    
@@ -141,10 +147,10 @@ module lid_screw_holes () {
     //translate ([        SD, Y + 2*T - SD, Z-15]) cylinder (d=SD,h=50);
     //translate ([T + X + T - SD, T + Y + T - SD, Z-15]) cylinder (d=SD,h=50);
     
-    translate ([    T/2   , -S +  T/2  , Z-15]) cylinder (d=SD,h=50);
-    translate ([T + X + T - T/2   , -S +  T/2  , Z-15]) cylinder (d=SD,h=50);
-    translate ([      T/2, Y + 2*T - T/2, Z-15]) cylinder (d=SD,h=50);
-    translate ([T + X + T - T/2, T + Y + T - T/2, Z-15]) cylinder (d=SD,h=50);
+    translate ([    R   , -S +  R  , Z-15]) cylinder (d=SD,h=50);
+    translate ([T + X + T - R   , -S +  R  , Z-15]) cylinder (d=SD,h=50);
+    translate ([    R, T + Y + T - R, Z-15]) cylinder (d=SD,h=50);
+    translate ([T + X + T - R, T + Y + T - R, Z-15]) cylinder (d=SD,h=50);
 }
 
 
@@ -169,11 +175,19 @@ module lid() {
     }
 }
 
+
+/**
+ * Screws to allow this part to be attached to main enclosure box. This wall is separate
+ * because the USB type B socket protrudes a little from the Aurduino board and it may 
+ * not be possible to get the board if this wall is present.
+ */
 module usb_wall_screw_holes () {
-        translate ([0,T/2-S,R]) rotate ([0,90,0]) translate([0,0,-10]) cylinder(d=SD,h=20);
-        translate ([0,T/2-S,Z-14]) rotate ([0,90,0]) translate([0,0,-10]) cylinder(d=SD,h=20);
-        translate ([0,T+S+Y-T/2,R]) rotate ([0,90,0]) translate([0,0,-10]) cylinder(d=SD,h=20);
-        translate ([0,T+S+Y-T/2,Z-14]) rotate ([0,90,0]) translate([0,0,-10]) cylinder(d=SD,h=20);
+    translate ([0,R-S,R]) rotate ([0,90,0]) translate([0,0,-0.1]) cylinder(d=SD,h=SL);
+    translate ([0,R-S,Z-14]) rotate ([0,90,0]) translate([0,0,-0.1]) cylinder(d=SD,h=SL);
+    translate ([0,T+S+Y-R,R]) rotate ([0,90,0]) translate([0,0,-0.1]) cylinder(d=SD,h=SL);
+    translate ([0,T+S+Y-R,Z-14]) rotate ([0,90,0]) translate([0,0,-0.1]) cylinder(d=SD,h=SL);
+    
+    // TODO: allow for screw head to be sunk 
 }
 
 module spectrometer_screw_holes () {
