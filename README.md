@@ -25,4 +25,9 @@ Checking the calibration for myself... First (very crude) attempt at calibration
     // lambda = 2.608*i + 289.2 (unit nm)
 
 ```
-    
+
+## Enclosure
+
+OpenSCAD files to create an enclosure for the GroupGets breakout board mounted on a Arduino Uno / Duemilanova 
+are in the enclosures directory. Rendering of the Arduno from 
+https://github.com/kellyegan/OpenSCAD-Arduino-Mounting-Library/tree/master
