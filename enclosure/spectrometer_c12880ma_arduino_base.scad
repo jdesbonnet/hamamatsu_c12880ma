@@ -13,11 +13,27 @@
 
 // For printing, enable one at time. Vertical components may need to
 // rotated in the slicer for reliable printing.
-showMainBox = true;
-showLid = true;
-showUsbWall = false;
+
+// TODO changes
+// X-axis separation of spectrometer attachment screw holes too narrow. Not enough space
+// between screw head and spectrometer can for a decent think light-tight cavity wall.
+//
+// M3 threaded inserts need hole diameter 5mm (4mm was very messy). Getting inserts 
+// propertly aligned isn't easy. Wondering maybe a embedded nut will work better?
 
 
+
+
+include <arduino.scad>
+
+
+
+
+//showMainBox = true;
+//showLid = false;
+//showUsbWall = false;
+showSpectrometerAttachment = true;
+//showArduino = true;
 
 $fn = 60;
 
@@ -38,15 +54,25 @@ S = 4;
 // Threaded M2 inserts: diameter 3.5mm (length seems more like 4mm!)
 SD = 2; // Screw diameter mm
 SL = 3.5; // Screw length (not including head height)
-TID = 3.5; // Threaded insert diameter
-TIL = 4;   // Threaded insert length
+
+// M2 TID=3.5, TIL=4mm
+// M3 TID=4.0, TIL=6mm
+TID = 4.5; // Threaded insert diameter
+TIL = 6.0;   // Threaded insert length
+
 SHD = 4; // Screw head diameter
 SHH = 3; // Screw head height
 
 // Offset of screw center from corners
 R = 3.5;
 //R = 5;
+R = TID;
 
+// X axis distance (mm) from left wall inner surface to the center of the spectrometer window
+SPX = 50.0;
+SPY = 20.0;
+SPW = 12.0; // Spectrometer can width (mm)
+SPH = 19.0; // Spectrometer can height (mm)
 
 if (showMainBox) {
     main_enclosure_box();
@@ -63,8 +89,17 @@ if (showUsbWall) {
     usb_wall();
 }
 
+if (showSpectrometerAttachment) {
+    //color([1,0,0]) translate([T+SPX,-T,SPY+SPH/2]) rotate ([90,0,0]) spectrometer_attachment();
+    color([1,0,0]) spectrometer_attachment();
 
 
+}
+
+if (showArduino) {
+    dueDimensions = boardDimensions( DUE );
+    translate([T, Y+S, T]) rotate([0,0,-90]) arduino(UNO);
+}
 
 module mainblock() {
     difference() {
@@ -97,7 +132,7 @@ module mainblock() {
 
     
         // Hole for spectrometer can
-        translate([T+44.5,-5,20]) cube ([12,19,50]);
+        translate([T+SPX-SPW/2,-5,SPY]) cube ([SPW,SPH,30]);
         
 
     }
@@ -117,11 +152,14 @@ module main_enclosure_box() {
         union() {
             mainblock();
         
+
+        
         
             // Posts to facilitate screw diamater > wall thickness. 
             // Use sphere to round the start of the post so that there
             // is no sudden overhang
             
+            color([1,0,1]) {
             translate([R, -S+R,    Z-hole_depth-R]) sphere(d=sd*2);
             translate([R, -S+R,    Z-hole_depth-R]) cylinder(h=hole_depth+R, d=sd*2);
         
@@ -134,15 +172,30 @@ module main_enclosure_box() {
         
             translate([T+X+T-R, T+Y+T-R, Z-SL-R]) sphere(d=sd*2);
             translate([T+X+T-R, T+Y+T-R, Z-SL-R]) cylinder(h=SL+R, d=sd*2);
+            }
        
+                               
+            spectrometer_screw_posts(TID == undef ? SD : TID, TIL == undef ? SL : TIL);
+        
+        
         }
  
         // Holes for top lid screws
+        
         lid_screw_holes(TID == undef ? SD : TID, TIL == undef ? SL : TIL);
-        spectrometer_screw_holes();
+        
+        spectrometer_screw_holes(TID == undef ? SD : TID, TIL == undef ? SL : TIL);
+
+       
+        
         usb_wall_screw_holes(TID == undef ? SD : TID, TIL == undef ? SL : TIL);
     }
     
+
+        
+    //color ([1,0,1]) spectrometer_screw_holes(TID == undef ? SD : TID, TIL == undef ? SL : TIL);
+    //color ([1,0,1]) spectrometer_screw_posts(TID == undef ? SD : TID, TIL == undef ? SL : TIL);
+
 
     
 }
@@ -189,20 +242,28 @@ module usb_wall_screw_holes (sd,sl) {
     translate ([0,R-S,R]) rotate ([0,90,0]) translate([0,0,-eps]) cylinder(d=sd,h=sl+2*eps);
     translate ([0,R-S,Z-14]) rotate ([0,90,0]) translate([0,0,-eps]) cylinder(d=sd,h=sl+2*eps);
     translate ([0,T+S+Y-R,R]) rotate ([0,90,0]) translate([0,0,-eps]) cylinder(d=sd,h=sl+2*eps);
-    translate ([0,T+S+Y-R,Z-14]) rotate ([0,90,0]) translate([0,0,-eps]) cylinder(d=sd,h=sl+2*eps);
-    
-    // TODO: allow for screw head to be sunk 
+    translate ([0,T+S+Y-R,Z-14]) rotate ([0,90,0]) translate([0,0,-eps]) cylinder(d=sd,h=sl+2*eps);    
 }
+
 
 
 /**
  * Screw holes to allow instrument to be mounted in line with spectrometer can.
  */
-module spectrometer_screw_holes () {
-        translate ([T+44.5-SD*2,T/2-S,22]) rotate ([90,0,0]) translate([0,0,-10]) cylinder(d=SD,h=20);
-        translate ([T+44.5-SD*2,T/2-S,42]) rotate ([90,0,0]) translate([0,0,-10]) cylinder(d=SD,h=20);
-        translate ([T+44.5+10+SD*2,T/2-S,22]) rotate ([90,0,0]) translate([0,0,-10]) cylinder(d=SD,h=20);
-        translate ([T+44.5+10+SD*2,T/2-S,42]) rotate ([90,0,0]) translate([0,0,-10]) cylinder(d=SD,h=20);
+module spectrometer_screw_holes (sd,sl) {
+    eps = 0.01;    
+    translate ([T+SPX-SPW/2 - SD*2, -S, 22]) rotate ([-90,0,0]) translate([0,0,-eps]) cylinder(d=sd,h=sl+eps*3);
+    translate ([T+SPX-SPW/2 - SD*2, -S, 42]) rotate ([-90,0,0]) translate([0,0,-eps]) cylinder(d=sd,h=sl+eps*3);
+    translate ([T+SPX+SPW/2 + SD*2, -S, 22]) rotate ([-90,0,0]) translate([0,0,-eps]) cylinder(d=sd,h=sl+eps*3);
+    translate ([T+SPX+SPW/2 + SD*2, -S, 42]) rotate ([-90,0,0]) translate([0,0,-eps]) cylinder(d=sd,h=sl+eps*3);
+}
+
+module spectrometer_screw_posts (sd,sl) {
+    eps = 0.0;    
+    translate ([T+SPX-SPW/2 - SD*2, -S, 22]) rotate ([-90,0,0]) translate([0,0,-eps]) cylinder(d=sd*2,h=sl+eps*3);
+    translate ([T+SPX-SPW/2 - SD*2, -S, 42]) rotate ([-90,0,0]) translate([0,0,-eps]) cylinder(d=sd*2,h=sl+eps*3);
+    translate ([T+SPX+SPW/2 + SD*2, -S, 22]) rotate ([-90,0,0]) translate([0,0,-eps]) cylinder(d=sd*2,h=sl+eps*3);
+    translate ([T+SPX+SPW/2 + SD*2, -S, 42]) rotate ([-90,0,0]) translate([0,0,-eps]) cylinder(d=sd*2,h=sl+eps*3);
 }
 
 
@@ -223,4 +284,26 @@ module usb_wall () {
     
        //color(1,0,0) translate ([-T,0,0]) usb_wall_screw_holes(SD,T) ;
 
+}
+
+module spectrometer_attachment () {
+    w = SPW + SD * 4 + SD * 4;
+    h = SPH + SD * 2 + 10;
+    
+  
+    //translate([-w/2,-h/2],0) cube([w,h,T]);
+    
+    difference() {
+        union() {
+            translate([T+SPX - w/2,-T, SPY+SPH/2 - h/2]) rotate ([90,0,0]) cube([w,h,T]);
+            translate([T+SPX - (SPW+4)/2, -T, SPY+SPH/2 - h/2]) rotate ([90,0,0]) cube([SPW+4,h,10]);
+        }
+        translate([0,-T,0]) spectrometer_screw_holes(SD, TIL == undef ? SL : TIL);
+        
+        // Hole for spectrometer can
+        //translate([T+SPX-SPW/2,-5,SPY]) cube ([SPW,SPH,30]);
+            translate([T+SPX-SPW/2,-15,SPY]) cube ([SPW,SPH,30]);
+
+    }
+    
 }
