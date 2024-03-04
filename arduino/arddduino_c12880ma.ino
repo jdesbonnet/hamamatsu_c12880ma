@@ -37,7 +37,7 @@ uint16_t data[SPEC_CHANNELS];
 uint8_t integration_time = 17;
 
 // Rate limiter (delay in ms between scans)
-int rate = 10;
+int rate = 500;
 
 void setup(){
 
@@ -107,7 +107,13 @@ void readSpectrometer(){
   // "The shift register starts operation at the rising edge of CLK
   // immediately after ST goes low."
   // Is this the integration period? Do we have any control over it?
-  for(int i = 0; i < 85; i++){
+  // Example sketch had "i < 85" in this loop, but I think it should be
+  // 86 as datasheet specifies 87. 
+  // Evidence for this is that with the original 85 in the loop sample
+  // index 0,1 looked much lower than those and indices 2,3,4...
+  // So should it be 87 in the loop (??!)
+  // Why did they put the final pulse outside the loop?
+  for(int i = 0; i < 87; i++){ // was 85
       digitalWrite(SPEC_CLK, HIGH);
       delayMicroseconds(delayTime);
       digitalWrite(SPEC_CLK, LOW);
@@ -116,6 +122,7 @@ void readSpectrometer(){
 
   // One more clock pulse before the actual read
   // (for total 86? data sheet specifies 87).
+  // Why is this outside the loop above??
   digitalWrite(SPEC_CLK, HIGH);
   delayMicroseconds(delayTime);
   digitalWrite(SPEC_CLK, LOW);
