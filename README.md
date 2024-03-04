@@ -31,3 +31,8 @@ Checking the calibration for myself... First (very crude) attempt at calibration
 OpenSCAD files to create an enclosure for the GroupGets breakout board mounted on a Arduino Uno / Duemilanova 
 are in the enclosures directory. Rendering of the Arduno from 
 https://github.com/kellyegan/OpenSCAD-Arduino-Mounting-Library/tree/master
+
+## Related documents
+
+Mini-spectrometers app note:
+https://www.hamamatsu.com/content/dam/hamamatsu-photonics/sites/documents/99_SALES_LIBRARY/ssd/mini-spectrometer_kacc9003e.pdf
