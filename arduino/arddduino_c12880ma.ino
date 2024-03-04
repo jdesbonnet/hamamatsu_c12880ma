@@ -34,6 +34,11 @@
 #define SPEC_CHANNELS    288 // New Spec Channel
 uint16_t data[SPEC_CHANNELS];
 
+uint8_t integration_time = 17;
+
+// Rate limiter (delay in ms between scans)
+int rate = 10;
+
 void setup(){
 
   //Set desired pins to OUTPUT
@@ -90,7 +95,7 @@ void readSpectrometer(){
   digitalWrite(SPEC_ST, HIGH);
   delayMicroseconds(delayTime);
   // Was 15, try 7?
-  for(int i = 0; i < 7; i++){
+  for(int i = 0; i < integration_time; i++){
       digitalWrite(SPEC_CLK, HIGH);
       delayMicroseconds(delayTime);
       digitalWrite(SPEC_CLK, LOW);
@@ -166,7 +171,39 @@ void loop(){
    
   readSpectrometer();
   printData();
-  delay(100);  
+
+  // Allow simple control commands by serial port.
+  if (Serial.available()) {
+    int control = Serial.read();
+    switch (control) {
+      case 'l' : {
+        digitalWrite (WHITE_LED,LOW);
+        break;
+      }
+      case 'L' : {
+        digitalWrite (WHITE_LED,HIGH);
+        break;
+      }
+      case 'R' : {
+        rate = 10;;
+        break;
+      }
+      case 'r' : {
+        rate = 500;
+        break;
+      }
+      case 'x' : {
+        integration_time=7;
+        break;
+      }      
+      case 'X' : {
+        integration_time=15;
+        break;
+      }
+    }
+    
+  }
+  delay(rate);  
    
 }
 
