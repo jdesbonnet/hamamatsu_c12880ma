@@ -3,6 +3,13 @@
  * Enhances original script to controll LED and integration 
  * time.
  * 
+ * Remark: EOS (End of Scan) output is not connected, but is
+ * not required.
+ * 
+ * How does photon integration work?
+ * Datasheet: "Supports synchronized integration (electronic shutter function)"
+ *
+ * 
  * Joe Desbonnet 2024-03-04.
  */
 
@@ -40,10 +47,17 @@ void setup(){
 /*
  * This functions reads spectrometer data from SPEC_VIDEO
  * Look at the Timing Chart in the Datasheet for more info
+ * 
+ * Integration time is the high period of ST pulse plus
+ * 48 clock cycles.
+ * 
+ * The shift register starts operation at the rising edge of CLK
+ * immediately after ST goes low.
  */
 void readSpectrometer(){
 
-  int delayTime = 1; // delay time
+  // delay increment in microseconds
+  int delayTime = 1;
 
   // Start clock cycle and set start pulse to signal start
   digitalWrite(SPEC_CLK, LOW);
@@ -51,39 +65,45 @@ void readSpectrometer(){
   digitalWrite(SPEC_CLK, HIGH);
   delayMicroseconds(delayTime);
   digitalWrite(SPEC_CLK, LOW);
+
+
+
+  // Data sheet: "The integration time equals the high period of ST plus 48 CLK cycles."
+
+
+  // 
+  // High period of ST. 'thp' in datasheet. Min 6/f (6 cycles).
+  //
   digitalWrite(SPEC_ST, HIGH);
   delayMicroseconds(delayTime);
-
-  //Sample for a period of time
-  for(int i = 0; i < 15; i++){
-
+  // Was 15, try 7?
+  for(int i = 0; i < 7; i++){
       digitalWrite(SPEC_CLK, HIGH);
       delayMicroseconds(delayTime);
       digitalWrite(SPEC_CLK, LOW);
       delayMicroseconds(delayTime); 
- 
   }
-
-  //Set SPEC_ST to low
+  // Low period of ST
   digitalWrite(SPEC_ST, LOW);
 
-  //Sample for a period of time
+  // "The shift register starts operation at the rising edge of CLK
+  // immediately after ST goes low."
+  // Is this the integration period? Do we have any control over it?
   for(int i = 0; i < 85; i++){
-
       digitalWrite(SPEC_CLK, HIGH);
       delayMicroseconds(delayTime);
       digitalWrite(SPEC_CLK, LOW);
-      delayMicroseconds(delayTime); 
-      
+      delayMicroseconds(delayTime);
   }
 
-  //One more clock pulse before the actual read
+  // One more clock pulse before the actual read
+  // (for total 86? data sheet specifies 87).
   digitalWrite(SPEC_CLK, HIGH);
   delayMicroseconds(delayTime);
   digitalWrite(SPEC_CLK, LOW);
   delayMicroseconds(delayTime);
 
-  //Read from SPEC_VIDEO
+  //Read from SPEC_VIDEO (288 channels)
   for(int i = 0; i < SPEC_CHANNELS; i++){
 
       data[i] = analogRead(SPEC_VIDEO);
@@ -133,7 +153,7 @@ void loop(){
    
   readSpectrometer();
   printData();
-  delay(10);  
+  delay(250);  
    
 }
 
