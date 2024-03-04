@@ -6,7 +6,15 @@
  * Remark: EOS (End of Scan) output is not connected, but is
  * not required.
  * 
+ * Remark: The use of delayMicroseconds() in loop to bit-bang the clock
+ * signal limits the clocking rate to 500kHz which is very slow. It is not 
+ * clear from the datasheet what is the fastest clock rate allowed, but 
+ * the worked example uses 5MHz.
+ * 
  * How does photon integration work?
+ * Datasheet says "integration time is equal to the high period of the start
+ * pulse + 48 cycles of clock pulses".
+ * 
  * Datasheet: "Supports synchronized integration (electronic shutter function)"
  *
  * 
@@ -41,6 +49,11 @@ void setup(){
 
   // Test control of white LED - works!
   digitalWrite (WHITE_LED,LOW);
+
+  // Datasheet: "Do not use the video signal read at the first ST immediaately after [powerup]."
+  // Read and discard first scan.
+  readSpectrometer();
+  delay(10); // 10ms
   
 }
 
@@ -153,7 +166,7 @@ void loop(){
    
   readSpectrometer();
   printData();
-  delay(250);  
+  delay(100);  
    
 }
 
