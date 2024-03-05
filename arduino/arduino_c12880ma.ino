@@ -34,10 +34,10 @@
 #define SPEC_CHANNELS    288 // New Spec Channel
 uint16_t data[SPEC_CHANNELS];
 
-uint8_t integration_time = 17;
-
 // Rate limiter (delay in ms between scans)
-int rate = 500;
+int rate = 20;
+
+uint32_t iteration = 0;
 
 void setup(){
 
@@ -77,6 +77,21 @@ void readSpectrometer(){
   // delay increment in microseconds
   int delayTime = 1;
 
+
+
+  //
+  // Experiment to measure the luminescence lifetime of the white LED.
+  // Results don't make sense. The longer the period after the pulse
+  // the higher the pixel values. Ramps up to a plateau after 500us.
+  // Ok, mystery solved (maybe). The driver chip has some smarts and
+  // doesn't kill the LED current immediately on pin low. So we don't
+  // have find timing control over the white LED on the breakout board.
+  
+  int x = iteration%1000;
+  digitalWrite (WHITE_LED,HIGH);
+  digitalWrite (WHITE_LED,LOW);
+  delayMicroseconds(x*50);
+
   // Start clock cycle and set start pulse to signal start
   digitalWrite(SPEC_CLK, LOW);
   delayMicroseconds(delayTime);
@@ -94,8 +109,9 @@ void readSpectrometer(){
   //
   digitalWrite(SPEC_ST, HIGH);
   delayMicroseconds(delayTime);
-  // Was 15, try 7?
-  for(int i = 0; i < integration_time; i++){
+  
+  // The 15 is important here
+  for(int i = 0; i <15; i++){
       digitalWrite(SPEC_CLK, HIGH);
       delayMicroseconds(delayTime);
       digitalWrite(SPEC_CLK, LOW);
@@ -113,20 +129,41 @@ void readSpectrometer(){
   // index 0,1 looked much lower than those and indices 2,3,4...
   // So should it be 87 in the loop (??!)
   // Why did they put the final pulse outside the loop?
-  for(int i = 0; i < 87; i++){ // was 85
+  for(int i = 0; i < 88; i++){ // was 85 in the original example
+
+      // TODO maybe assembly big-banging with NOP
+      // would be faster
+
+      // Atempting to understand the integration period here by pulsing a 
+      // light source at varies offsets into the integration period. 
+      // The pulse width seems not to affect the amplitude of the spectrum
+      // which is odd. Perhap explained by the possibility that the 
+      // light decay time of the white LED phosphor is very long.
+      // A short pulse (on and immediately off) has identical effect to 
+      // LED left on for full clock cycle (about 2 us).
+      //if (i == x) {
+      //   digitalWrite (WHITE_LED,HIGH);
+      //   digitalWrite (WHITE_LED,LOW);
+      //}
+
+      // Delay times here seem to have no effect on the pixel values (?!)
       digitalWrite(SPEC_CLK, HIGH);
       delayMicroseconds(delayTime);
+
       digitalWrite(SPEC_CLK, LOW);
       delayMicroseconds(delayTime);
+
   }
 
   // One more clock pulse before the actual read
   // (for total 86? data sheet specifies 87).
   // Why is this outside the loop above??
+  /*
   digitalWrite(SPEC_CLK, HIGH);
   delayMicroseconds(delayTime);
   digitalWrite(SPEC_CLK, LOW);
   delayMicroseconds(delayTime);
+  */
 
   //Read from SPEC_VIDEO (288 channels)
   for(int i = 0; i < SPEC_CHANNELS; i++){
@@ -139,6 +176,7 @@ void readSpectrometer(){
       delayMicroseconds(delayTime);
         
   }
+
 
   //Set SPEC_ST to high
   digitalWrite(SPEC_ST, HIGH);
@@ -163,12 +201,15 @@ void readSpectrometer(){
  * processing plot
  */
 void printData(){
+
+  Serial.print((iteration%1000)*50);
+  //Serial.print(',');
   
   for (int i = 0; i < SPEC_CHANNELS; i++){
-    
+    //if (i>0) {
+      Serial.print(',');
+    //}
     Serial.print(data[i]);
-    Serial.print(',');
-    
   }
   
   Serial.print("\n");
@@ -199,18 +240,11 @@ void loop(){
         rate = 500;
         break;
       }
-      case 'x' : {
-        integration_time=7;
-        break;
-      }      
-      case 'X' : {
-        integration_time=15;
-        break;
-      }
+      
     }
     
   }
   delay(rate);  
-   
-}
 
+  iteration++;
+}
